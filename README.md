@@ -1,12 +1,13 @@
 # ziprecruiter
+
 An unofficial ziprecruiter api for applying to jobs,login,search, and upload new resumes.
 
 <p align="left">
-<h1>ZipRecruiter</h1>
-<img src="https://github.com/ConnorSMaynes/ziprecruiter/blob/master/logo.png" alt="ZipRecruiter Bot" width="200" height="150">
+<img src="https://github.com/ConnorSMaynes/ziprecruiter/blob/master/logo.png" alt="ZipRecruiter Bot" >
 </p>
 
-A simple unofficial api about ziprecruiter allowing for:
+A simple unofficial api for ziprecruiter.
+Functionality:
   > application to jobs
   > uploading of resumes
   > searching for jobs
