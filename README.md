@@ -8,9 +8,9 @@ An unofficial ziprecruiter api for applying to jobs,login,search, and upload new
 
 A simple unofficial api for ziprecruiter.
 Functionality:
-  > application to jobs
-  > uploading of resumes
-  > searching for jobs
+  - application to jobs
+  - uploading of resumes
+  - searching for jobs
 
 <p align="left">
 <img src="https://github.com/ConnorSMaynes/ziprecruiter/blob/master/batteries.png", alt="Batteries Included - Selenium - Chrome Webdriver" width=30, height=30>
