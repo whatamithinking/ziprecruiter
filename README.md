@@ -12,6 +12,11 @@ Functionality:
   > uploading of resumes
   > searching for jobs
 
+<p align="left">
+<img src="https://github.com/ConnorSMaynes/ziprecruiter/blob/master/batteries.png", alt="Batteries Included - Selenium - Chrome Webdriver" width=30, height=30>
+      Selenium Batteries Included - Chrome Webdriver
+</p>
+
 ## Methods
 
 - `login()` : Login to ZipRecruiter with the provided credentials. ZipRecruiter is protected by No Captcha ReCaptcha, so if this pops up and login cannot proceed the selenium browser will restart and display itself so you can solve the captcha. Selenium is ONLY used for login, because of the captcha problem, everything else is nice and fast through requests.
