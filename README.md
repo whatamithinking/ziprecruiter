@@ -1,13 +1,13 @@
 
 
 <p align="left">
-<img src="https://github.com/ConnorSMaynes/ziprecruiter/blob/master/logo.png" alt="ZipRecruiter Bot" >
+<img src="https://github.com/ConnorSMaynes/ziprecruiter/blob/master/static/logo.png" alt="ZipRecruiter Bot" >
 </p>
 
 A simple unofficial api for ziprecruiter.
 
 <p align="left">
-<img src="https://github.com/ConnorSMaynes/ziprecruiter/blob/master/batteries.png", alt="Batteries Included - Selenium - Chrome Webdriver" width=30, height=30>
+<img src="https://github.com/ConnorSMaynes/ziprecruiter/blob/master/static/batteries.png", alt="Batteries Included - Selenium - Chrome Webdriver" width=30, height=30>
       Selenium Batteries Included - Chrome Webdriver
 </p>
 
