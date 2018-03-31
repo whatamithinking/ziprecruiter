@@ -1,16 +1,10 @@
-# ziprecruiter
 
-An unofficial ziprecruiter api for applying to jobs,login,search,getting applied jobs, getting job details, and upload new resumes.
 
 <p align="left">
 <img src="https://github.com/ConnorSMaynes/ziprecruiter/blob/master/logo.png" alt="ZipRecruiter Bot" >
 </p>
 
 A simple unofficial api for ziprecruiter.
-Functionality:
-  - application to jobs
-  - uploading of resumes
-  - searching for jobs
 
 <p align="left">
 <img src="https://github.com/ConnorSMaynes/ziprecruiter/blob/master/batteries.png", alt="Batteries Included - Selenium - Chrome Webdriver" width=30, height=30>
@@ -19,7 +13,7 @@ Functionality:
 
 ## Methods
 
-- `login()` : Login to ZipRecruiter with the provided credentials. ZipRecruiter is protected by No Captcha ReCaptcha, so if this pops up and login cannot proceed the selenium browser will restart and display itself so you can solve the captcha. Selenium is ONLY used for login, because of the captcha problem, everything else is nice and fast through requests.
+- `login` : Login to ZipRecruiter with the provided credentials. ZipRecruiter is protected by No Captcha ReCaptcha, so if this pops up and login cannot proceed the selenium browser will restart and display itself so you can solve the captcha. Selenium is ONLY used for login, because of the captcha problem, everything else is nice and fast through requests.
 - `search` : search for jobs. returns a list of search results named tuples with ApplyLink ( quick apply job link ) and DetailsLink ( link to job desciption and other job details ). generator. The following filters are supported:
   - keywords
   - posted x days ago
