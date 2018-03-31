@@ -1,8 +1,9 @@
 
 from common_resources import _getSession, RequestiumSession
 from time import sleep
-import fire, types, os, magic
+import fire, types, os, magic, re
 from tqdm import tqdm
+from collections import namedtuple
 
 SITE = {
     'root'		    :	'https://www.ziprecruiter.com'
@@ -21,6 +22,7 @@ SITE = {
             'resume'    :   ()
         }
     }
+    ,'applied_jobs' :   '/candidate/my-jobs?page={PageNumber}'
     ,'search'	    :	{
         'root'	: 	'/candidate/search?'
         ,'keywords'			: 'search={0}'
@@ -39,6 +41,8 @@ SITE = {
         }
     }
 }
+
+SearchResult = namedtuple( 'SearchResult', "ApplyLink, DetailsLink" )
 
 class ZipRecruiter():
 
@@ -205,12 +209,15 @@ class ZipRecruiter():
         NextButton = JobSearchPage.xpath( NextButtonXPath )
         while NextButton and iReturnedJobs < Quantity:				# continue looping until we run out of jobs or meet demand
             QuickApplyJobLinks = JobSearchPage.xpath(  \
-                "//button[contains(@class,'one_click_apply')]/@data-href" )
+                "//button[contains(@class,'one_click_apply')]" )
             for QuickApplyJobLink in QuickApplyJobLinks:
-                JobLink = QuickApplyJobLink.extract()
+                ApplyLink = QuickApplyJobLink.xpath( "./@data-href" ).extract()[0]
+                DetailsLink = QuickApplyJobLink.xpath("../..//" +
+                            "a[contains(@class,'job_link')]/@href").extract()[0]
+                SR = SearchResult( ApplyLink, DetailsLink )
                 if iReturnedJobs >= Quantity: break
                 iReturnedJobs += 1									# increment count of returned jobs
-                yield JobLink
+                yield SR
             if iReturnedJobs < Quantity:
                 NextButton = JobSearchPage.xpath( NextButtonXPath )
                 if len( NextButton ) > 0:  							# get the hyperlink to next search result page
@@ -254,9 +261,123 @@ class ZipRecruiter():
         else:
             return False
 
+    def getApplied( self, TopCount=1 ):
+        '''
+        Purpose:    Get json data on all jobs applied to.
+                    Includes: application_status, job_title, company_name, company_address
+                    ,job_page_link, application_date, job_status, other_applicants
+                    ,resume_on_file
+        Arguments:
+            TopCount - int - get the first TopCount many applied jobs. jobs list
+                                starts with most recent jobs applied to at the top
+        '''
+
+        AppliedJobsURL = SITE[ 'root' ] + SITE[ 'applied_jobs' ]
+        iPage = 1
+        AppliedJobsPage = self._session.get( AppliedJobsURL.format( PageNumber=iPage ) )
+
+        # EXTRACT PAGE COUNT FROM NAV BUTTONS AT BOTTOM
+        PageCount = AppliedJobsPage.xpath(
+                        "//ul[contains(@class,'paginationNumbers')]" + \
+                        "/li[last()]/a/text()" ).extract()[0]
+        PageCount = int( PageCount ) if PageCount.isdigit() else 1
+
+        # EXTRACT APPLIED JOBS DATA - USE JOB ID AS KEY
+        AppliedJobs = {}
+        while iPage <= PageCount and len( AppliedJobs ) < TopCount:
+            JobElements = AppliedJobsPage.xpath( "//ul[@class='appliedJobsList']/li" )
+            for JobElement in JobElements:
+                JobID = JobElement.xpath("./@id").extract()[0].rsplit('-',1)[1]
+                JobTitle = JobElement.xpath(".//h4[@class='jobTitle']/text()").extract()[0]
+                JobPageLink = SITE['root'] + JobElement.xpath( ".//h4[@class='jobTitle']/../@href" ).extract()[0]
+                CompanyName = JobElement.xpath( ".//p[@class='jobCompany']/span/" +
+                                                "span[not(@data-name)]/text()" ).extract()[0]
+                CompanyAddress = ' '.join( JobElement.xpath(".//span[@data-name='address']" +
+                                                            "/node()/text()").extract() )
+                ApplicationStatus = ' '.join( x.strip() for x in \
+                                              JobElement.xpath(".//div[@class='status_bar']" +
+                                                               "//text()").extract() if x.strip() != '' )
+
+                # GET DATA FROM TABLE - USES MORE GENERALIZED SEARCH PATTERN, TO HANDLE FUTURE CHANGES
+                ApplicationDate = ''
+                ResumeName = ''
+                JobStatus = ''
+                ApplicantCount = ''
+                DetailRows = JobElement.xpath( ".//tr" )
+                for DetailRow in DetailRows:
+                    DetailValues = DetailRow.xpath( "./td//text()" ).extract()
+                    FieldName = None
+                    FieldValue = None
+                    for DetailValue in DetailValues:
+                        if DetailValue.strip() != '':
+                            if FieldName == None:
+                                FieldName = DetailValue.strip()
+                            elif FieldValue == None:
+                                FieldValue = DetailValue.strip()
+                            else:
+                                break
+                    if 'app' in FieldName.lower() and 'date' in FieldName.lower():
+                        ApplicationDate = FieldValue
+                    elif 'resume' in FieldName.lower():
+                        ResumeName = FieldValue
+                    elif 'status' in FieldName.lower():
+                        JobStatus = FieldValue
+                    elif 'other' in FieldName.lower() and 'app' in FieldName.lower():
+                        ApplicantCount = re.search( r'\d+', FieldValue ).group(0)
+
+                # STORE IN DICT
+                AppliedJobs.update( {
+                    JobID    :   {
+                        'job_title'             :   JobTitle
+                        ,'job_page_link'        :   JobPageLink
+                        ,'company_name'         :   CompanyName
+                        ,'company_address'      :   CompanyAddress
+                        ,'application_status'   :   ApplicationStatus
+                        ,'application_date'     :   ApplicationDate
+                        ,'application_count'    :   ApplicantCount
+                        ,'resume_name'          :   ResumeName
+                        ,'job_status'           :   JobStatus
+                    }
+                } )
+            iPage += 1
+            AppliedJobsPage = self._session.get(AppliedJobsURL.format(PageNumber=iPage))
+        return AppliedJobs
+
+    def getJobDetails( self, JobLink ):
+        '''
+        Purpose:    Get the details of the job at the given job link,
+                    including job_title, company_name, job_address,
+                    job_link, and job_description.
+        Arguments:
+            JobLink - str - full url to job on ziprecruiter
+        Returns:
+            JobDict - dict - dictionary of job details
+        '''
+        JobPage = self._session.get( JobLink )
+
+        try:
+            JobTitle = JobPage.xpath( "//h1[@class='job_title']/text()" ).\
+                                extract()[0].strip()
+            CompanyName = ' '.join( x.strip() for x in \
+                                    JobPage.xpath( "//a[@class='job_details_link']" +
+                                    "//text()" ).extract() if x.strip() != '' )
+            JobAddress = ''.join( JobPage.xpath( "//span[@itemprop='address']" +
+                                                 "//text()" ).extract() )
+            JobDescription = ''.join( x.strip() for x in \
+                                      JobPage.xpath( "//div[@class='jobDescriptionSection']" +
+                                                     "//text()" ).extract() )
+            JobDict = {
+                'job_link'          :   JobLink
+                ,'job_title'        :   JobTitle
+                ,'job_address'      :   JobAddress
+                ,'company_name'     :   CompanyName
+                ,'job_description'  :   JobDescription
+            }
+        except:
+            JobDict = {}
+
+        return JobDict
+
 if __name__ == '__main__':
     fire.Fire( ZipRecruiter )
-
-
-
 
