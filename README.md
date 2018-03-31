@@ -20,7 +20,7 @@ A simple unofficial api for ziprecruiter.
   - salary
   - type ( full-time, internship, temporary )
 - `uploadResume` : Upload the provided resume to ziprecruiter to replace the existing resume in the account.
-- `apply` : apply to the job at the given url returned from `search`
+- `apply` : apply to the job at the given url ( ApplyLink ) returned from `search`
 - `batchApply` : apply to a bunch of jobs at once. progress bar.
 - `getApplied` : get json/dict of data about jobs applied to
 - `getJobDetails` : get details on a given job from the DetailsLink of the search result returned from `search`
