@@ -1,10 +1,12 @@
-Metadata-Version: 1.1
+Metadata-Version: 1.2
 Name: ziprecruiter
-Version: 1.0
-Summary: An unofficial ziprecruiter api for applying to jobs,login,search, and upload new resumes.
+Version: 1.0.1
+Summary: An unofficial ziprecruiter api for applying to jobs,login,search, uploading new resumes, and more!
 Home-page: https://github.com/ConnorSMaynes/ziprecruiter
 Author: ConnorSMaynes
 Author-email: connormaynes@gmail.com
+Maintainer: ConnorSMaynes
+Maintainer-email: connormaynes@gmail.com
 License: MIT License
 Description: 
         

@@ -1,4 +1,8 @@
+README.md
 setup.py
+ziprecruiter/__init__.py
+ziprecruiter/common_resources.py
+ziprecruiter/ziprecruiter.py
 ziprecruiter.egg-info/PKG-INFO
 ziprecruiter.egg-info/SOURCES.txt
 ziprecruiter.egg-info/dependency_links.txt
