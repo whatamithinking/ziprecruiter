@@ -1,0 +1,5 @@
+setup.py
+ziprecruiter.egg-info/PKG-INFO
+ziprecruiter.egg-info/SOURCES.txt
+ziprecruiter.egg-info/dependency_links.txt
+ziprecruiter.egg-info/top_level.txt

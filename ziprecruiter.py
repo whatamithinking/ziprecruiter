@@ -7,10 +7,8 @@ from collections import namedtuple
 
 SITE = {
     'root'		    :	'https://www.ziprecruiter.com'
-    ,'apply'	    :	'/apply/contact-info/{Job_ID}' + \
-                        '?_token={Token};oneClickApply=true&amp;purpose=one-click-apply-' + \
-                        'click&amp;source=ziprecruiter-jobs-site#'
     ,'login'	    :	'/login?realm=candidates'
+    ,'postlogin'    :   'https://www.ziprecruiter.com/candidate/suggested-jobs'
     ,'resume'       :   {
         'root'  :   '/candidate/resume'
         ,'data' :   {
@@ -55,30 +53,40 @@ class ZipRecruiter():
         self._session = None
         self.username = None
         self.password = None
+        self.resume = None
         self.solveCaptcha = solveCaptcha
-        self.headless = Headless
+        self._headless = Headless
         if oSession != None:
             if not isinstance( oSession, RequestiumSession ):
                 raise ValueError( 'ERROR : NOT A REQUESTIUMSESSION INSTANCE' )
             self._session = oSession
         else:
-            self._session = _getSession( Headless=self.headless )
+            self._session = _getSession( Headless=self._headless )
 
-    def login( self, Username, Password ):
+    def login( self, Username=None, Password=None, CloseDriverOnComplete=True ):
         '''
         Purpose:	Login to the site on behalf of the user.
         Arguments:
             Username - str - the email of the user
             Password - str - the password of this user for this job site
+            CloseDriverOnComplete - bool - [ optional ] True if this is a retry of the login.
+                                            when True, the driver will be quit after successfully
+                                            logging in.
         Returns:
             True/False - bool - True if successful. False if login creds did not work.
         '''
 
         # CHECK FOR USER CREDS
-        if all( x == None for x in ( Username, Password ) ):
-            raise ValueError( 'ERROR : USERNAME AND PASSWORD REQUIRED' )
-        self.username = Username
-        self.password = Password
+        if Username == None:
+            if self.username == None:
+                raise ValueError( 'ERROR : USERNAME REQUIRED' )
+        else:
+            self.username = Username
+        if Password == None:
+            if self.password == None:
+                raise ValueError( 'ERROR : PASSWORD REQUIRED' )
+        else:
+            self.password = Password
 
         # ATTEMPT LOGIN
         self._session.driver.get( SITE[ 'root' ] + SITE[ 'login' ] )
@@ -105,11 +113,15 @@ class ZipRecruiter():
             else:
 
                 # IF RUNNING HEADLESS, NEED TO RESTART SO USER CAN SOLVE
-                if self.headless:
+                if self._headless:
+                    Headless = self._headless
+                    self._headless = False
                     self._session.driver.quit()
                     self._session = None
-                    self._session = _getSession( Headless=self.headless )
-                    self.login( self.username, self.password )
+                    self._session = _getSession( Headless=False
+                                                 ,WebdriverOptions={} )
+                    self.login( self.username, self.password, False )
+                    self._headless = Headless
 
                 # WAIT FOR USER TO SOLVE
                 else:
@@ -129,9 +141,13 @@ class ZipRecruiter():
         # COPY SESSION TO REQUESTS SESSION
         self._session.transfer_driver_cookies_to_session()
 
+        # CLOSE BROWSER UNLESS IN DEBUG MODE - ALL OTHER METHODS USE REQUESTS
+        if CloseDriverOnComplete:
+            self._session.driver.quit()
+
         return True
 
-    def uploadResume( self, FilePath ):
+    def uploadResume( self, FilePath=None ):
         '''
         Purpose:    Upload a resume to ZipRecruiter.
         Arguments:
@@ -139,10 +155,16 @@ class ZipRecruiter():
         Returns:
             True/False - bool - True if upload successful. False otherwise.
         '''
-
+        
+        # VALIDATE USER INPUTS
+        if FilePath == None:
+            if self.resume == None:
+                raise ValueError( 'ERROR : RESUME FILE PATH REQUIRED' )
+        else:
+            self.resume = FilePath
         if not os.path.isfile( FilePath ):
             raise ValueError( 'ERROR : FILE DOES NOT EXIST' )
-
+        
         ResumePostURL = SITE[ 'root' ] + SITE[ 'resume' ][ 'root' ]
 
         # GET UPLOAD TOKEN
@@ -156,10 +178,10 @@ class ZipRecruiter():
 
         # BUILD FILE DATA
         Files = SITE[ 'resume' ][ 'files' ]
-        FileName = os.path.basename( FilePath )
+        FileName = os.path.basename( self.resume )
         Mime = magic.Magic(mime=True)
-        MimeType = Mime.from_file( FilePath )                                  # tell website what file encoding to use
-        Files[ 'resume' ] = ( FileName, open( FilePath, 'rb' ), MimeType )
+        MimeType = Mime.from_file( self.resume )                                  # tell website what file encoding to use
+        Files[ 'resume' ] = ( FileName, open( self.resume, 'rb' ), MimeType )
 
         # UPLOAD
         UploadResult = self._session.post( ResumePostURL, data=Data, files=Files )
@@ -174,7 +196,7 @@ class ZipRecruiter():
                     for all available search parameters.
         Arguments:
             Quantity - int - the number of jobs to yield
-            **kwargs - dict/named tuple - search values
+            **kwargs - dict/named tuple - search values. see SITE for details on options.
         Returns:
             JobLink - str - job quick apply links for the user.
         '''
@@ -251,10 +273,14 @@ class ZipRecruiter():
         '''
         Purpose:	Apply to the ziprecruiter job.
         Arguments:
-            JobLink - str - the link to apply to the job
+            JobLink - str or SearchResult - the link to apply to the job.
+                                            if SearchResult, apply link will
+                                            be extracted from it.
         Returns:
             True/False - bool - True if applying successful. False otherwise
         '''
+        if isinstance( JobLink, SearchResult ):
+            JobLink = JobLink.ApplyLink
         ApplyReponse = self._session.get( JobLink )
         if ApplyReponse.status_code == 200:
             return True
@@ -380,4 +406,3 @@ class ZipRecruiter():
 
 if __name__ == '__main__':
     fire.Fire( ZipRecruiter )
-
