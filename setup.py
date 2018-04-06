@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from setuptools import setup, find_packages
 
 try:
@@ -8,7 +9,7 @@ except(IOError, ImportError):
 
 setup(
     name='ziprecruiter',
-    version='1.0',
+    version='1.0.1',
     description='An unofficial ziprecruiter api for applying to jobs,login,search, and upload new resumes.',
     long_description=long_description,
     packages=find_packages(),
