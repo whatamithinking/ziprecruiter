@@ -34,6 +34,8 @@ pip install git+git://github.com/ConnorSMaynes/ziprecruiter
 ## Usage
 
 ```python
+from ziprecruiter.ziprecruiter import ZipRecruiter
+
 # LOGIN
 z = ZipRecruiter()
 z.login( USERNAME, PASSWORD )
