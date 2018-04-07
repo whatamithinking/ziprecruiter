@@ -34,7 +34,7 @@ pip install git+git://github.com/ConnorSMaynes/ziprecruiter
 ## Usage
 
 ```python
-from ziprecruiter.ziprecruiter import ZipRecruiter
+from ziprecruiter import ZipRecruiter
 
 # LOGIN
 z = ZipRecruiter()
