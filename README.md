@@ -1,7 +1,7 @@
 
 
 <p align="left">
-<img src="https://github.com/ConnorSMaynes/ziprecruiter/blob/master/ziprecruiter/static/logo.png" alt="ZipRecruiter Bot" >
+<img src="https://github.com/ConnorSMaynes/ziprecruiter/blob/master/ziprecruiter/static/logo.png" alt="ZipRecruiter Unofficial API" >
 </p>
 
 A simple unofficial api for ziprecruiter.
