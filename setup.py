@@ -11,7 +11,7 @@ setup(
     version='1.0.1',
     description='An unofficial ziprecruiter api for applying to jobs,login,search, uploading new resumes, and more!',
     long_description=long_description,
-    packages=['ziprecruiter'],
+    packages=find_packages(),
     url='https://github.com/ConnorSMaynes/ziprecruiter',
     license='MIT License',
     author='ConnorSMaynes',
