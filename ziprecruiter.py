@@ -1,21 +1,18 @@
 
 from .common_resources import _getSession, RequestiumSession
 from time import sleep
-import fire, types, os, magic, re
+import fire, types, os, magic, re, base64, json, urllib
 from tqdm import tqdm
 from collections import namedtuple
+from ratelimit import limits, sleep_and_retry
 
 SITE = {
     'root'		    :	'https://www.ziprecruiter.com'
     ,'login'	    :	'/login?realm=candidates'
     ,'postlogin'    :   'https://www.ziprecruiter.com/candidate/suggested-jobs'
+    ,'profile'      :   '/profile'
     ,'resume'       :   {
-        'root'  :   '/candidate/resume'
-        ,'data' :   {
-            '_safesave'     :   ''
-            ,'_token'       :   ''
-            ,'resume_text'  :   ''
-        }
+        'root'  :   '/api/profile/resume'
         ,'files':   {
             'resume'    :   ()
         }
@@ -164,31 +161,41 @@ class ZipRecruiter():
             self.resume = FilePath
         if not os.path.isfile( FilePath ):
             raise ValueError( 'ERROR : FILE DOES NOT EXIST' )
-        
-        ResumePostURL = SITE[ 'root' ] + SITE[ 'resume' ][ 'root' ]
 
         # GET UPLOAD TOKEN
-        ResumeUploadPage = self._session.get( ResumePostURL )
-        Token = ResumeUploadPage.xpath('//input[@name="_token"]/@value')[ 0 ].extract()
+        profile_url = SITE['root'] + SITE['profile']
+        profile_page = self._session.get( profile_url )
 
         # BUILD UPLOAD DATA
-        Data = SITE[ 'resume' ][ 'data' ]
-        Data[ '_safesave' ] = self._session.cookies[ 'SAFESAVE_TOKEN' ]
-        Data[ '_token' ] = Token
+        post_headers = {
+            'accept-encoding'   : 'gzip, deflate, br'
+            ,'accept'           : 'application/json'
+            ,'content-type'     : 'text/plain;charset=UTF-8'
+        }
+        self._session.headers.update( post_headers )
+        resume_data = base64.b64encode( open( self.resume, 'rb' ).read() ).decode( 'utf-8' )
+        resume_type = magic.Magic(mime=True).from_file(self.resume)
+        resume_name = os.path.basename( self.resume )
+        post_data = {
+            'enc_response_id'                   : ''
+             ,'overwrite_profile_with_resume'   : False
+             ,'replace_default'                 : True
+             ,'resume'                          : 'data:' + resume_type + ';base64,' + resume_data
+             ,'resume_filename'                 : resume_name
+        }
+        json_post_data = json.dumps(post_data)
 
-        # BUILD FILE DATA
-        Files = SITE[ 'resume' ][ 'files' ]
-        FileName = os.path.basename( self.resume )
-        Mime = magic.Magic(mime=True)
-        MimeType = Mime.from_file( self.resume )                                  # tell website what file encoding to use
-        Files[ 'resume' ] = ( FileName, open( self.resume, 'rb' ), MimeType )
+        # UPLOAD RESUME
+        upload_url = SITE['root'] + SITE['resume']['root']
+        upload_result = self._session.post( upload_url, data=json_post_data)
+        upload_result_dict = json.loads( upload_result.content )
+        pdf_url_path = upload_result_dict['data']['profile']['resume']['pdf_absolute_url']
 
-        # UPLOAD
-        UploadResult = self._session.post( ResumePostURL, data=Data, files=Files )
-        if UploadResult.status_code != 200:
-            return False
-        else:
+        # VALIDATE UPLOAD
+        if self._session.get( pdf_url_path ).status_code == 200:
             return True
+        else:
+            return False
 
     def search( self, Quantity=25, **kwargs ):
         '''
@@ -208,7 +215,7 @@ class ZipRecruiter():
                 if isinstance( SITE[ 'search' ][ SearchField ], str ):
                     SearchFormat = SITE[ 'search' ][ SearchField ]
                     SearchURL = SearchURL + '&' + \
-                        SearchFormat.format( SearchValue )
+                        SearchFormat.format( urllib.parse.quote_plus( SearchValue ) )
                 elif isinstance( SITE[ 'search' ][ SearchField ], dict ):
                     SearchFormat = SITE[ 'search' ][ SearchField ][ 'root' ]
                     OptionDict = SITE[ 'search' ][ SearchField ][ 'options' ]
@@ -229,6 +236,8 @@ class ZipRecruiter():
         iReturnedJobs = 0
         NextButtonXPath = "//a[@id='pagination-button-next']/@href"
         NextButton = JobSearchPage.xpath( NextButtonXPath )
+        if len(NextButton) == 0:
+            raise ValueError('ERROR : NO JOBS FOUND FOR QUERY : ' + SearchURL )
         while NextButton and iReturnedJobs < Quantity:				# continue looping until we run out of jobs or meet demand
             QuickApplyJobLinks = JobSearchPage.xpath(  \
                 "//button[contains(@class,'one_click_apply')]" )
@@ -269,6 +278,8 @@ class ZipRecruiter():
             ProgressBar.update( 1 )
         return QuantityAppliedTo
 
+    @sleep_and_retry
+    @limits( calls=1, period=5 )
     def apply( self, JobLink ):
         '''
         Purpose:	Apply to the ziprecruiter job.
