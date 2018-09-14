@@ -6,7 +6,8 @@ from requestium import Session
 from selenium.common.exceptions import NoSuchElementException
 import os
 
-CHROME_DRIVER_PATH = "chromedriver.exe"
+CHROME_DRIVER_PATH = os.getcwd() + r"\ziprecruiter\drivers\chromedriver.exe"
+print( CHROME_DRIVER_PATH )
 
 class RequestiumSession(Session):
 
