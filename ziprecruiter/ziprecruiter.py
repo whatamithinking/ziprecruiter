@@ -41,6 +41,8 @@ SearchResult = namedtuple( 'SearchResult', "ApplyLink, DetailsLink" )
 
 class ZipRecruiter():
 
+	api_throttle_secs = 3
+
     def __init__( self, oSession=None, Headless=True, solveCaptcha=None ):
         '''
         Arguments:
@@ -60,6 +62,8 @@ class ZipRecruiter():
         else:
             self._session = _getSession( Headless=self._headless )
 
+	@sleep_and_retry
+	@limits( calls=1, period=api_throttle_secs )
     def login( self, Username=None, Password=None, CloseDriverOnComplete=True ):
         '''
         Purpose:	Login to the site on behalf of the user.
@@ -144,6 +148,8 @@ class ZipRecruiter():
 
         return True
 
+	@sleep_and_retry
+	@limits( calls=1, period=api_throttle_secs )
     def uploadResume( self, FilePath=None ):
         '''
         Purpose:    Upload a resume to ZipRecruiter.
@@ -197,6 +203,8 @@ class ZipRecruiter():
         else:
             return False
 
+	@sleep_and_retry
+	@limits( calls=1, period=api_throttle_secs )
     def search( self, Quantity=25, **kwargs ):
         '''
         Purpose:	Search for jobs. See the SITE dictionary
@@ -279,7 +287,7 @@ class ZipRecruiter():
         return QuantityAppliedTo
 
     @sleep_and_retry
-    @limits( calls=1, period=5 )
+    @limits( calls=1, period=api_throttle_secs )
     def apply( self, JobLink ):
         '''
         Purpose:	Apply to the ziprecruiter job.
@@ -298,6 +306,8 @@ class ZipRecruiter():
         else:
             return False
 
+	@sleep_and_retry
+    @limits( calls=1, period=api_throttle_secs )
     def getApplied( self, TopCount=1 ):
         '''
         Purpose:    Get json data on all jobs applied to.
@@ -380,6 +390,8 @@ class ZipRecruiter():
             AppliedJobsPage = self._session.get(AppliedJobsURL.format(PageNumber=iPage))
         return AppliedJobs
 
+	@sleep_and_retry
+    @limits( calls=1, period=api_throttle_secs )
     def getJobDetails( self, JobLink ):
         '''
         Purpose:    Get the details of the job at the given job link,
