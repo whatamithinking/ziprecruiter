@@ -6,7 +6,8 @@ from requestium import Session
 from selenium.common.exceptions import NoSuchElementException
 import os
 
-CHROME_DRIVER_PATH = os.getcwd() + r"\ziprecruiter\drivers\chromedriver.exe"
+working_dir = os.path.dirname( os.path.realpath( __file__ ) )
+CHROME_DRIVER_PATH = working_dir + r"\ziprecruiter\drivers\chromedriver.exe"
 print( CHROME_DRIVER_PATH )
 
 class RequestiumSession(Session):
@@ -59,6 +60,3 @@ def _getSession(DriverPath=CHROME_DRIVER_PATH
                              ,
                              default_timeout=TimeOut, webdriver_options=WebdriverOptions
                              )
-
-s=_getSession(Headless=False)
-s.driver.get( 'https://www.google.com/' )
