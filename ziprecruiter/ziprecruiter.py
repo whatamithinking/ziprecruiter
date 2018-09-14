@@ -238,7 +238,7 @@ class ZipRecruiter():
 			raise ValueError( 'ERROR : SEARCH FAILED : ' + SearchURL )
 
 		@sleep_and_retry
-		@limits(calls=1, period=api_throttle_secs)
+		@limits(calls=1, period=self.api_throttle_secs)
 		def getNextPage( JobSearchPage ):
 			NextButton = JobSearchPage.xpath(NextButtonXPath)
 			if len(NextButton) > 0:  # get the hyperlink to next search result page
