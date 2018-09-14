@@ -202,8 +202,6 @@ class ZipRecruiter():
 		else:
 			return False
 
-	@sleep_and_retry
-	@limits( calls=1, period=api_throttle_secs )
 	def search( self, Quantity=25, **kwargs ):
 		'''
 		Purpose:	Search for jobs. See the SITE dictionary
@@ -239,6 +237,15 @@ class ZipRecruiter():
 		if JobSearchPage.status_code != 200:
 			raise ValueError( 'ERROR : SEARCH FAILED : ' + SearchURL )
 
+		@sleep_and_retry
+		@limits(calls=1, period=api_throttle_secs)
+		def getNextPage( JobSearchPage ):
+			NextButton = JobSearchPage.xpath(NextButtonXPath)
+			if len(NextButton) > 0:  # get the hyperlink to next search result page
+				NextButtonLink = NextButton[0].extract()
+				JobSearchPage = self._session.get(SITE['root'] + NextButtonLink)  # goto next result page
+			return JobSearchPage
+
 		# YIELD QUICK APPLY JOBS
 		iReturnedJobs = 0
 		NextButtonXPath = "//a[@id='pagination-button-next']/@href"
@@ -246,7 +253,7 @@ class ZipRecruiter():
 		if len(NextButton) == 0:
 			raise ValueError('ERROR : NO JOBS FOUND FOR QUERY : ' + SearchURL )
 		while NextButton and iReturnedJobs < Quantity:				# continue looping until we run out of jobs or meet demand
-			QuickApplyJobLinks = JobSearchPage.xpath(  \
+			QuickApplyJobLinks = JobSearchPage.xpath(
 				"//button[contains(@class,'one_click_apply')]" )
 			for QuickApplyJobLink in QuickApplyJobLinks:
 				ApplyLink = QuickApplyJobLink.xpath( "./@data-href" ).extract()[0]
@@ -257,11 +264,7 @@ class ZipRecruiter():
 				iReturnedJobs += 1									# increment count of returned jobs
 				yield SR
 			if iReturnedJobs < Quantity:
-				NextButton = JobSearchPage.xpath( NextButtonXPath )
-				if len( NextButton ) > 0:  							# get the hyperlink to next search result page
-					NextButtonLink = NextButton[0].extract()
-					JobSearchPage = self._session.get( \
-						SITE[ 'root' ] + NextButtonLink )			# goto next result page
+				JobSearchPage = getNextPage( JobSearchPage )
 
 	def batchApply( self, JobLinks ):
 		'''
