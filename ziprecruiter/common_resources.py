@@ -4,8 +4,10 @@ Purpose:	A set of common resources used between many of the job sites.
 
 from requestium import Session
 from selenium.common.exceptions import NoSuchElementException
+import os
 
-CHROME_DRIVER_PATH = r"./chromedriver.exe"
+working_dir = os.getcwd()
+CHROME_DRIVER_PATH = working_dir + r"\chromedriver.exe"
 
 class RequestiumSession(Session):
 
