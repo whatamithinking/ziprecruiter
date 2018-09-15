@@ -1,5 +1,5 @@
 
-from common_resources import _getSession, RequestiumSession
+from .common_resources import _getSession, RequestiumSession
 from time import sleep
 import fire, types, os, magic, re, base64, json, urllib
 from tqdm import tqdm
