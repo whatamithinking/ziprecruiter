@@ -1,5 +1,5 @@
 
-from .common_resources import _getSession, RequestiumSession
+from common_resources import _getSession, RequestiumSession
 from time import sleep
 import fire, types, os, magic, re, base64, json, urllib
 from tqdm import tqdm
@@ -36,6 +36,22 @@ SITE = {
 		}
 	}
 }
+
+RECRUITING_AGENCY_KEYWORDS = [
+	'staffing'
+	,'consulting'
+	,'consultants'
+	,'recruiting'
+	,'recruiter'
+	,'recruitment'
+	,'group'
+	,'employment'
+	,'sourcing'
+	,'resourcing'
+	,'talent'
+	,'workforce planning'
+	,'force'
+]
 
 SearchResult = namedtuple( 'SearchResult', "ApplyLink, DetailsLink" )
 
@@ -130,7 +146,7 @@ class ZipRecruiter():
 						sleep( 0.1 )
 
 		# IF BAD LOGIN CREDS
-		if self._session.element_exists( \
+		if self._session.element_exists(
 			self._session.driver, "//div[contains(text(),'Incorrect email or password')]" ):
 			return False
 
@@ -202,7 +218,7 @@ class ZipRecruiter():
 		else:
 			return False
 
-	def search( self, Quantity=25, **kwargs ):
+	def search( self, Quantity=25, FilterOutRecruitingAgencies=True, **kwargs ):
 		'''
 		Purpose:	Search for jobs. See the SITE dictionary
 					for all available search parameters.
@@ -251,18 +267,25 @@ class ZipRecruiter():
 		NextButtonXPath = "//a[@id='pagination-button-next']/@href"
 		NextButton = JobSearchPage.xpath( NextButtonXPath )
 		if len(NextButton) == 0:
-			raise ValueError('ERROR : NO JOBS FOUND FOR QUERY : ' + SearchURL )
+			print('ERROR : NO JOBS FOUND FOR QUERY : ' + SearchURL )
+			return []
 		while NextButton and iReturnedJobs < Quantity:				# continue looping until we run out of jobs or meet demand
 			QuickApplyJobLinks = JobSearchPage.xpath(
 				"//button[contains(@class,'one_click_apply')]" )
-			for QuickApplyJobLink in QuickApplyJobLinks:
-				ApplyLink = QuickApplyJobLink.xpath( "./@data-href" ).extract()[0]
-				DetailsLink = QuickApplyJobLink.xpath("../..//" +
-							"a[contains(@class,'job_link')]/@href").extract()[0]
-				SR = SearchResult( ApplyLink, DetailsLink )
-				if iReturnedJobs >= Quantity: break
-				iReturnedJobs += 1									# increment count of returned jobs
-				yield SR
+			CompanyNames = JobSearchPage.xpath(
+				"//button[contains(@class,'one_click_apply')]/../../*/*/a[@class='t_org_link name']/text()"
+			)
+			for QuickApplyJobLink, CompanyName in zip( QuickApplyJobLinks, CompanyNames ):
+				if not any( x.lower() in CompanyName.extract().lower()
+					for x in RECRUITING_AGENCY_KEYWORDS ) or \
+					not FilterOutRecruitingAgencies:					# filter out recruiting agencies
+					ApplyLink = QuickApplyJobLink.xpath( "./@data-href" ).extract()[0]
+					DetailsLink = QuickApplyJobLink.xpath("../..//" +
+								"a[contains(@class,'job_link')]/@href").extract()[0]
+					SR = SearchResult( ApplyLink, DetailsLink )
+					if iReturnedJobs >= Quantity: break
+					iReturnedJobs += 1									# increment count of returned jobs
+					yield SR
 			if iReturnedJobs < Quantity:
 				JobSearchPage = getNextPage( JobSearchPage )
 
