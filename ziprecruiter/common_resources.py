@@ -8,7 +8,6 @@ import os
 
 working_dir = os.path.dirname( os.path.realpath( __file__ ) )
 CHROME_DRIVER_PATH = working_dir + r"\drivers\chromedriver.exe"
-print( CHROME_DRIVER_PATH )
 
 class RequestiumSession(Session):
 
