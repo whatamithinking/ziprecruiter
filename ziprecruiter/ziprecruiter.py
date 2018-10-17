@@ -1,10 +1,13 @@
 
-from .common_resources import _getSession, RequestiumSession
 from time import sleep
 import fire, types, os, magic, re, base64, json, urllib
 from tqdm import tqdm
 from collections import namedtuple
 from ratelimit import limits, sleep_and_retry
+
+import sys
+sys.path.append('.')
+from common_resources import _getSession, RequestiumSession
 
 SITE = {
 	'root'		    :	'https://www.ziprecruiter.com'
